@@ -184,7 +184,7 @@ internal class EmbedGenerator {
         var factory = new ImageFactory()
             .Load(coverImage)
             .Resize(new ResizeLayer(_layout.Size, ResizeMode.Crop))
-            // .GaussianBlur(CoverImageBlur)
+            .GaussianBlur(CoverImageBlur)
             .OverlayRegion(fadedGradient.Image)
             .Tint(CoverImageTint)
             .MaskRegion(_coverMask, _layout.FullRectangle, ResizeMode.Stretch);
