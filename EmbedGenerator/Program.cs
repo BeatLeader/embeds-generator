@@ -35,7 +35,7 @@ internal static class Program {
         var tekoFontFamily = fontCollection.Families[0];
         
         var embedGenerator = new EmbedGenerator(
-            new Size(400, 240),
+            new Size(500, 300),
             AvatarMask,
             BackgroundImage,
             GradientMask,

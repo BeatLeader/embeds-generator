@@ -10,9 +10,10 @@ namespace EmbedGenerator;
 internal class EmbedGenerator {
     #region Constants
 
-    private static readonly Color CoverGradientTint = Color.FromArgb(128, 255, 255, 255);
+    private static readonly Color CoverGradientTint = Color.FromArgb(96, 255, 255, 255);
     private static readonly Color CoverImageTint = Color.FromArgb(255, 140, 140, 140);
-    private const int CoverImageBlur = 12;
+    private const int CoverGradientBlur = 24;
+    private const int CoverImageBlur = 10;
 
     private readonly NumberFormatInfo _numberFormatInfo = new() {
         NumberGroupSeparator = "",
@@ -93,7 +94,7 @@ internal class EmbedGenerator {
         
         var accuracyText = $"{(accuracy * 100).ToString(_numberFormatInfo)}%";
         var rankText = pp != 0 ? $"#{rank} • {pp.ToString(_numberFormatInfo)}pp" : $"#{rank}";
-        var diffText = stars != 0 ? $"{difficulty} {stars.ToString(_numberFormatInfo)}★" : difficulty;
+        var diffText = stars != 0 ? $"{difficulty} {stars.ToString(_numberFormatInfo)}*" : difficulty;
 
         var graphics = Graphics.FromImage(factory.Image);
         graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
@@ -177,14 +178,15 @@ internal class EmbedGenerator {
     private Image GenerateCover(Image coverImage, Image gradient) {
         var fadedGradient = new ImageFactory()
             .Load(gradient)
-            .Tint(CoverGradientTint);
+            .Tint(CoverGradientTint)
+            .GaussianBlur(CoverGradientBlur);
             
         var factory = new ImageFactory()
             .Load(coverImage)
             .Resize(new ResizeLayer(_layout.Size, ResizeMode.Crop))
+            // .GaussianBlur(CoverImageBlur)
             .OverlayRegion(fadedGradient.Image)
             .Tint(CoverImageTint)
-            .GaussianBlur(CoverImageBlur)
             .MaskRegion(_coverMask, _layout.FullRectangle, ResizeMode.Stretch);
 
         return factory.Image;
