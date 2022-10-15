@@ -10,8 +10,8 @@ namespace EmbedGenerator;
 internal class EmbedGenerator {
     #region Constants
 
-    private static readonly Color CoverGradientTint = Color.FromArgb(96, 255, 255, 255);
-    private static readonly Color CoverImageTint = Color.FromArgb(255, 140, 140, 140);
+    private static readonly Color CoverGradientTint = Color.FromArgb(40, 255, 255, 255);
+    private static readonly Color CoverImageTint = Color.FromArgb(255, 160, 160, 160);
     private const int CoverGradientBlur = 24;
     private const int CoverImageBlur = 10;
 
@@ -22,37 +22,48 @@ internal class EmbedGenerator {
     };
 
     #endregion
-    
+
     #region Constructor
 
+    private readonly Image _starImage;
     private readonly Image _avatarMask;
+    private readonly Image _avatarShadow;
     private readonly Image _gradientMask;
     private readonly Image _backgroundImage;
     private readonly Image _coverMask;
     private readonly Image _finalMask;
     private readonly EmbedLayout _layout;
     private readonly Bitmap _fullSizeEmptyBitmap;
+    private readonly Bitmap _whitePixelBitmap;
     private readonly FontFamily _fontFamily;
+    private readonly Font _diffFont;
 
     public EmbedGenerator(
         Size size,
+        Image starImage,
         Image avatarMask,
+        Image avatarShadow,
         Image backgroundImage,
         Image gradientMask,
         Image coverMask,
-        Image finalMask, 
+        Image finalMask,
         FontFamily fontFamily
     ) {
         _fontFamily = fontFamily;
         _layout = new EmbedLayout(size);
+        _diffFont = new Font(_fontFamily, _layout.DiffFontSize);
 
+        _starImage = starImage;
         _avatarMask = avatarMask.ResizeIfNecessary(_layout.AvatarRectangle.Size);
+        _avatarShadow = avatarShadow.ResizeIfNecessary(_layout.AvatarOverlayRectangle.Size);
         _backgroundImage = backgroundImage.ResizeIfNecessary(_layout.FullRectangle.Size);
         _gradientMask = gradientMask.ResizeIfNecessary(_layout.FullRectangle.Size);
         _coverMask = coverMask.ResizeIfNecessary(_layout.FullRectangle.Size);
         _finalMask = finalMask.ResizeIfNecessary(_layout.FullRectangle.Size);
 
         _fullSizeEmptyBitmap = new Bitmap(_layout.Width, _layout.Height);
+        _whitePixelBitmap = new Bitmap(1, 1);
+        _whitePixelBitmap.SetPixel(0, 0, Color.White);
     }
 
     #endregion
@@ -77,35 +88,49 @@ internal class EmbedGenerator {
         Color rightColor,
         Color diffColor
     ) {
+        var hasStars = stars != 0;
+        var accuracyText = $"{(accuracy * 100).ToString(_numberFormatInfo)}%";
+        var rankText = pp != 0 ? $"#{rank} • {pp.ToString(_numberFormatInfo)}pp" : $"#{rank}";
+        var diffText = hasStars ? $"{difficulty} {stars.ToString(_numberFormatInfo)}" : difficulty;
+
+        var factory = new ImageFactory().Load(_fullSizeEmptyBitmap);
+        var graphics = Graphics.FromImage(factory.Image);
+        
+        _layout.CalculateCornerRectangles(graphics, _diffFont, diffText, hasStars,
+            out var textRectangle,
+            out var starRectangle,
+            out var cornerAreaRectangle
+        );
+
         var gradient = GenerateGradient(leftColor, rightColor);
         var cover = GenerateCover(coverImage, gradient);
+        var border = GenerateBorder(cornerAreaRectangle, gradient);
         var avatar = GenerateAvatar(avatarImage);
 
-        var factory = new ImageFactory()
-            .Load(_backgroundImage)
-            .OverlayRegion(gradient)
-            .OverlayRegion(cover)
+        factory.OverlayRegion(cover)
+            .OverlayRegion(border)
+            .OverlayRegion(_avatarShadow, _layout.AvatarOverlayRectangle)
             .OverlayRegion(avatar, _layout.AvatarRectangle);
 
         if (avatarOverlayImage != null) {
             var avatarOverlay = GenerateAvatarOverlay(avatarOverlayImage, overlayHueShift, overlaySaturation);
             factory.OverlayRegion(avatarOverlay, _layout.AvatarOverlayRectangle);
         }
-        
-        var accuracyText = $"{(accuracy * 100).ToString(_numberFormatInfo)}%";
-        var rankText = pp != 0 ? $"#{rank} • {pp.ToString(_numberFormatInfo)}pp" : $"#{rank}";
-        var diffText = stars != 0 ? $"{difficulty} {stars.ToString(_numberFormatInfo)}*" : difficulty;
 
-        var graphics = Graphics.FromImage(factory.Image);
+        if (hasStars) {
+            var star = GenerateStar(starRectangle.Size, diffColor);
+            factory.OverlayRegion(star, starRectangle);
+        }
+
         graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-        graphics.FitText(playerName, Color.White, _fontFamily, FontStyle.Bold, _layout.PlayerNameRectangle, _layout.MinPlayerNameFontSize);
-        graphics.FitText(songName, Color.White, _fontFamily, FontStyle.Bold, _layout.SongNameRectangle, _layout.MinSongNameFontSize);
-        graphics.FitText(accuracyText, Color.White, _fontFamily, FontStyle.Bold, _layout.AccTextRectangle);
-        graphics.FitText(rankText, Color.White, _fontFamily, FontStyle.Bold, _layout.RankTextRectangle);
-        graphics.FitText(modifiers, Color.White, _fontFamily, FontStyle.Bold, _layout.ModifiersTextRectangle);
-        graphics.FitText(diffText, diffColor, _fontFamily, FontStyle.Bold, _layout.DiffTextRectangle);
+        graphics.FitText(playerName, Color.White, _fontFamily, _layout.PlayerNameRectangle, _layout.MinPlayerNameFontSize);
+        graphics.FitText(songName, Color.White, _fontFamily, _layout.SongNameRectangle, _layout.MinSongNameFontSize);
+        graphics.FitText(accuracyText, Color.White, _fontFamily, _layout.AccTextRectangle);
+        graphics.FitText(rankText, Color.White, _fontFamily, _layout.RankTextRectangle);
+        graphics.FitText(modifiers, Color.White, _fontFamily, _layout.ModifiersTextRectangle);
+        graphics.DrawTextCentered(diffText, _diffFont, diffColor, textRectangle);
         // DrawDebugInfo(graphics);
-        
+
         factory.MaskRegion(_finalMask);
         return factory.Image;
     }
@@ -122,7 +147,19 @@ internal class EmbedGenerator {
         graphics.DrawRectangle(debugPen, _layout.AccTextRectangle);
         graphics.DrawRectangle(debugPen, _layout.RankTextRectangle);
         graphics.DrawRectangle(debugPen, _layout.ModifiersTextRectangle);
-        graphics.DrawRectangle(debugPen, _layout.DiffTextRectangle);
+    }
+
+    #endregion
+
+    #region GenerateStar
+
+    private Image GenerateStar(Size size, Color color) {
+        var factory = new ImageFactory()
+            .Load(_starImage)
+            .Resize(new ResizeLayer(size))
+            .Tint(color);
+
+        return factory.Image;
     }
 
     #endregion
@@ -162,11 +199,33 @@ internal class EmbedGenerator {
             new Point(_layout.Width, 0),
             leftColor, rightColor
         );
-        
+
         var factory = new ImageFactory().Load(_fullSizeEmptyBitmap);
         var graphics = Graphics.FromImage(factory.Image);
         graphics.FillRectangle(gradientBrush, _layout.FullRectangle);
         factory.MaskRegion(_gradientMask);
+
+        return factory.Image;
+    }
+
+    #endregion
+
+    #region GenerateBorder
+
+    private Image GenerateBorder(Rectangle cornerRectangle, Image gradient) {
+        var cornerFactory = new ImageFactory()
+            .Load(_whitePixelBitmap)
+            .Resize(new ResizeLayer(cornerRectangle.Size, ResizeMode.Stretch))
+            .RoundedCorners(_layout.DiffCornerRadius);
+
+        var maskFactory = new ImageFactory()
+            .Load(_coverMask)
+            .OverlayRegion(cornerFactory.Image, cornerRectangle);
+
+        var factory = new ImageFactory()
+            .Load(_backgroundImage)
+            .OverlayRegion(gradient)
+            .MaskRegion(maskFactory.Image);
 
         return factory.Image;
     }
@@ -180,14 +239,13 @@ internal class EmbedGenerator {
             .Load(gradient)
             .Tint(CoverGradientTint)
             .GaussianBlur(CoverGradientBlur);
-            
+
         var factory = new ImageFactory()
             .Load(coverImage)
             .Resize(new ResizeLayer(_layout.Size, ResizeMode.Crop))
             .GaussianBlur(CoverImageBlur)
-            .OverlayRegion(fadedGradient.Image)
             .Tint(CoverImageTint)
-            .MaskRegion(_coverMask, _layout.FullRectangle, ResizeMode.Stretch);
+            .OverlayRegion(fadedGradient.Image);
 
         return factory.Image;
     }

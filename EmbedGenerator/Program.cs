@@ -15,7 +15,9 @@ internal static class Program {
     private static readonly Image AvatarOverlayImage = LoadImage("AvatarOverlay.png");
     private static readonly Image CoverImage = LoadImage("Cover.png");
     
+    private static readonly Image StarImage = LoadImage("Star.png");
     private static readonly Image AvatarMask = LoadImage("AvatarMask.png");
+    private static readonly Image AvatarShadow = LoadImage("AvatarShadow.png");
     private static readonly Image BackgroundImage = LoadImage("Background.png");
     private static readonly Image GradientMask = LoadImage("GradientMask.png");
     private static readonly Image CoverMask = LoadImage("CoverMask.png");
@@ -31,12 +33,14 @@ internal static class Program {
 
     private static void Main() {
         var fontCollection = new PrivateFontCollection();
-        fontCollection.AddFontFile(Path.Combine(TestFilesDirectory, "Teko-Medium.ttf"));
+        fontCollection.AddFontFile(Path.Combine(TestFilesDirectory, "Teko-SemiBold.ttf"));
         var tekoFontFamily = fontCollection.Families[0];
         
         var embedGenerator = new EmbedGenerator(
             new Size(500, 300),
+            StarImage,
             AvatarMask,
+            AvatarShadow,
             BackgroundImage,
             GradientMask,
             CoverMask,
@@ -48,20 +52,20 @@ internal static class Program {
 
         var image = embedGenerator.Generate(
             "Reezonate",
-            "The Everlasting Calamity That Shifts The Time - Space Continuum On A Nanosecondal Basis [LEVEL 3]",
+            "Reeverie on the Onyx",
             "FC, DA, FS",
-            "Ex+",
-            0.9572f,
-            176,
+            "Expert+",
+            0.9573f,
+            13,
             607.58f,
-            10.23f,
+            123.352f,
             CoverImage,
             AvatarImage,
             AvatarOverlayImage,
             80,
             2.0f,
-            Color.Crimson,
-            Color.RoyalBlue,
+            Color.Red,
+            Color.Blue,
             Color.BlueViolet
         );
 

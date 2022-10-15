@@ -70,6 +70,25 @@ internal static class DrawingUtils {
 
     #endregion
 
+    #region DrawTextCentered
+
+    public static void DrawTextCentered(
+        this Graphics graphics,
+        string text,
+        Font font,
+        Color color,
+        Rectangle rectangle
+    ) {
+        var fittingSize = graphics.MeasureString(text, font);
+        var point = new PointF(
+            rectangle.Location.X + (rectangle.Width - fittingSize.Width) / 2,
+            rectangle.Location.Y + (rectangle.Height - fittingSize.Height * 0.8f) / 2
+        );
+        graphics.DrawString(text, font, new SolidBrush(color), point);
+    }
+
+    #endregion
+
     #region FitText
 
     public static void FitText(
@@ -77,15 +96,14 @@ internal static class DrawingUtils {
         string text,
         Color color,
         FontFamily fontFamily,
-        FontStyle fontStyle,
         Rectangle rectangle,
         float minimalFontSize = 0.0f
     ) {
-        var canFit = graphics.TryGetFittingFont(text, fontFamily, fontStyle, rectangle, 40, out var fittingFont, out var fittingSize);
+        var canFit = graphics.TryGetFittingFont(text, fontFamily, rectangle, 40, out var fittingFont, out var fittingSize);
         if (!canFit || fittingFont!.Size < minimalFontSize) {
-            fittingFont = new Font(fontFamily, minimalFontSize, fontStyle);
+            fittingFont = new Font(fontFamily, minimalFontSize);
             graphics.TryGetFittingString(text, fittingFont, rectangle, out text, out fittingSize);
-            if (graphics.TryGetFittingFont(text, fontFamily, fontStyle, rectangle, 40, out var finalFont, out var finalSize)) {
+            if (graphics.TryGetFittingFont(text, fontFamily, rectangle, 40, out var finalFont, out var finalSize)) {
                 fittingFont = finalFont;
                 fittingSize = finalSize;
             }
@@ -138,7 +156,6 @@ internal static class DrawingUtils {
         this Graphics graphics,
         string text,
         FontFamily fontFamily,
-        FontStyle fontStyle,
         Rectangle rectangle,
         int steps,
         out Font? font,
@@ -148,7 +165,7 @@ internal static class DrawingUtils {
         var decPerStep = fontSize / steps;
 
         while (fontSize > 0) {
-            font = new Font(fontFamily, fontSize, fontStyle);
+            font = new Font(fontFamily, fontSize);
             measuredSize = graphics.MeasureString(text, font);
             if (measuredSize.Width < rectangle.Width) return true;
             fontSize -= decPerStep;
