@@ -12,8 +12,8 @@ internal class EmbedGenerator {
 
     private static readonly Color CoverGradientTint = Color.FromArgb(40, 255, 255, 255);
     private static readonly Color CoverImageTint = Color.FromArgb(255, 160, 160, 160);
-    private const int CoverGradientBlur = 24;
-    private const int CoverImageBlur = 10;
+    private const int CoverGradientBlur = 18;
+    private const int CoverImageBlur = 4;
 
     private readonly NumberFormatInfo _numberFormatInfo = new() {
         NumberGroupSeparator = "",
@@ -107,10 +107,13 @@ internal class EmbedGenerator {
         var border = GenerateBorder(cornerAreaRectangle, gradient);
         var avatar = GenerateAvatar(avatarImage);
 
-        factory.OverlayRegion(cover)
-            .OverlayRegion(border)
-            .OverlayRegion(_avatarShadow, _layout.AvatarOverlayRectangle)
-            .OverlayRegion(avatar, _layout.AvatarRectangle);
+        factory.OverlayRegion(cover).OverlayRegion(border);
+
+        if (avatarOverlayImage == null) {
+            factory.OverlayRegion(_avatarShadow, _layout.AvatarOverlayRectangle);
+        }
+        
+        factory.OverlayRegion(avatar, _layout.AvatarRectangle);
 
         if (avatarOverlayImage != null) {
             var avatarOverlay = GenerateAvatarOverlay(avatarOverlayImage, overlayHueShift, overlaySaturation);
@@ -243,7 +246,7 @@ internal class EmbedGenerator {
         var factory = new ImageFactory()
             .Load(coverImage)
             .Resize(new ResizeLayer(_layout.Size, ResizeMode.Crop))
-            .GaussianBlur(CoverImageBlur)
+            // .GaussianBlur(CoverImageBlur)
             .Tint(CoverImageTint)
             .OverlayRegion(fadedGradient.Image);
 
