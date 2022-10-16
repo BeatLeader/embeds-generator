@@ -68,6 +68,7 @@ internal static class Program {
                 CoverImage,
                 AvatarImage,
                 AvatarOverlayImage,
+                // null,
                 80,
                 2.0f,
                 Color.Red,

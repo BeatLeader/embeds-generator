@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Text;
+using System.Threading.Tasks;
 using ImageProcessor;
 using ImageProcessor.Imaging;
 
@@ -182,19 +184,25 @@ internal static class DrawingUtils {
 
     public static Image ApplyHsbTransform(this Image source, float hueShiftDegrees, float saturation, float brightness) {
         var hueShiftRadians = hueShiftDegrees * MathF.PI / 180;
-        var buffer = new Bitmap(source.Width, source.Height);
-        var graphics = Graphics.FromImage(buffer);
-        graphics.DrawImage(source, Point.Empty);
 
-        for (var y = 0; y < source.Height; y += 1) {
-            for (var x = 0; x < source.Width; x += 1) {
-                var col = FloatColor.FromColor(buffer.GetPixel(x, y));
-                col.ApplyHsbTransform(hueShiftRadians, saturation, brightness);
-                buffer.SetPixel(x, y, col.ToColor());
+        var width = source.Width;
+        var height = source.Height;
+
+        var destination = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+
+        using (var sourceBitmap = new FastBitmap(source)) {
+            using (var destinationBitmap = new FastBitmap(destination)) {
+                Parallel.For(0, height, y => {
+                    for (var x = 0; x < width; x += 1) {
+                        var col = FloatColor.FromColor(sourceBitmap.GetPixel(x, y));
+                        col.ApplyHsbTransform(hueShiftRadians, saturation, brightness);
+                        destinationBitmap.SetPixel(x, y, col.ToColor());
+                    }
+                });
             }
         }
 
-        return buffer;
+        return destination;
     }
 
     #endregion
