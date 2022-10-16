@@ -20,6 +20,7 @@ internal static class Program {
     private static readonly Image AvatarShadow = LoadImage("AvatarShadow.png");
     private static readonly Image BackgroundImage = LoadImage("Background.png");
     private static readonly Image GradientMask = LoadImage("GradientMask.png");
+    private static readonly Image GradientMaskBlurred = LoadImage("GradientMaskBlurred.png");
     private static readonly Image CoverMask = LoadImage("CoverMask.png");
     private static readonly Image FinalMask = LoadImage("FinalMask.png");
 
@@ -36,7 +37,7 @@ internal static class Program {
         fontCollection.AddFontFile(Path.Combine(TestFilesDirectory, "Teko-SemiBold.ttf"));
         var tekoFontFamily = fontCollection.Families[0];
 
-        var scale = 0.8f;
+        var scale = 1.0f;
         var embedGenerator = new EmbedGenerator(
             new Size((int)(500 * scale), (int)(300 * scale)),
             StarImage,
@@ -44,6 +45,7 @@ internal static class Program {
             AvatarShadow,
             BackgroundImage,
             GradientMask,
+            GradientMaskBlurred,
             CoverMask,
             FinalMask,
             tekoFontFamily

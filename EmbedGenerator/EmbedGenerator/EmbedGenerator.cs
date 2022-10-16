@@ -4,16 +4,14 @@ using System.Drawing.Text;
 using System.Globalization;
 using ImageProcessor;
 using ImageProcessor.Imaging;
+using ImageProcessor.Imaging.Filters.Photo;
 
 namespace EmbedGenerator;
 
 internal class EmbedGenerator {
     #region Constants
 
-    private static readonly Color CoverGradientTint = Color.FromArgb(40, 255, 255, 255);
     private static readonly Color CoverImageTint = Color.FromArgb(255, 160, 160, 160);
-    private const int CoverGradientBlur = 18;
-    private const int CoverImageBlur = 4;
 
     private readonly NumberFormatInfo _numberFormatInfo = new() {
         NumberGroupSeparator = "",
@@ -29,6 +27,7 @@ internal class EmbedGenerator {
     private readonly Image _avatarMask;
     private readonly Image _avatarShadow;
     private readonly Image _gradientMask;
+    private readonly Image _gradientMaskBlurred;
     private readonly Image _backgroundImage;
     private readonly Image _coverMask;
     private readonly Image _finalMask;
@@ -45,6 +44,7 @@ internal class EmbedGenerator {
         Image avatarShadow,
         Image backgroundImage,
         Image gradientMask,
+        Image gradientMaskBlurred,
         Image coverMask,
         Image finalMask,
         FontFamily fontFamily
@@ -58,6 +58,7 @@ internal class EmbedGenerator {
         _avatarShadow = avatarShadow.ResizeIfNecessary(_layout.AvatarOverlayRectangle.Size);
         _backgroundImage = backgroundImage.ResizeIfNecessary(_layout.FullRectangle.Size);
         _gradientMask = gradientMask.ResizeIfNecessary(_layout.FullRectangle.Size);
+        _gradientMaskBlurred = gradientMaskBlurred.ResizeIfNecessary(_layout.FullRectangle.Size);
         _coverMask = coverMask.ResizeIfNecessary(_layout.FullRectangle.Size);
         _finalMask = finalMask.ResizeIfNecessary(_layout.FullRectangle.Size);
 
@@ -102,9 +103,10 @@ internal class EmbedGenerator {
             out var cornerAreaRectangle
         );
 
-        var gradient = GenerateGradient(leftColor, rightColor);
-        var cover = GenerateCover(coverImage, gradient);
-        var border = GenerateBorder(cornerAreaRectangle, gradient);
+        var borderGradient = GenerateGradient(_gradientMask, leftColor, rightColor);
+        var coverGradient = GenerateGradient(_gradientMaskBlurred, leftColor, rightColor);
+        var cover = GenerateCover(coverImage, coverGradient);
+        var border = GenerateBorder(cornerAreaRectangle, borderGradient);
         var avatar = GenerateAvatar(avatarImage);
 
         factory.OverlayRegion(cover).OverlayRegion(border);
@@ -171,8 +173,9 @@ internal class EmbedGenerator {
 
     private Image GenerateAvatar(Image avatarImage) {
         var factory = new ImageFactory()
-            .Load(avatarImage)
+            .Load(_whitePixelBitmap).Filter(MatrixFilters.Invert)
             .Resize(new ResizeLayer(_layout.AvatarRectangle.Size, ResizeMode.Stretch))
+            .OverlayRegion(avatarImage)
             .MaskRegion(_avatarMask, _layout.AvatarRectangle.Size);
 
         return factory.Image;
@@ -194,9 +197,9 @@ internal class EmbedGenerator {
 
     #endregion
 
-    #region GenerateGradient
+    #region GenerateGradients
 
-    private Image GenerateGradient(Color leftColor, Color rightColor) {
+    private Image GenerateGradient(Image mask, Color leftColor, Color rightColor) {
         var gradientBrush = new LinearGradientBrush(
             new Point(0, _layout.Height),
             new Point(_layout.Width, 0),
@@ -206,7 +209,7 @@ internal class EmbedGenerator {
         var factory = new ImageFactory().Load(_fullSizeEmptyBitmap);
         var graphics = Graphics.FromImage(factory.Image);
         graphics.FillRectangle(gradientBrush, _layout.FullRectangle);
-        factory.MaskRegion(_gradientMask);
+        factory.MaskRegion(mask);
 
         return factory.Image;
     }
@@ -238,17 +241,11 @@ internal class EmbedGenerator {
     #region GenerateCover
 
     private Image GenerateCover(Image coverImage, Image gradient) {
-        var fadedGradient = new ImageFactory()
-            .Load(gradient)
-            .Tint(CoverGradientTint)
-            .GaussianBlur(CoverGradientBlur);
-
         var factory = new ImageFactory()
             .Load(coverImage)
             .Resize(new ResizeLayer(_layout.Size, ResizeMode.Crop))
-            // .GaussianBlur(CoverImageBlur)
             .Tint(CoverImageTint)
-            .OverlayRegion(fadedGradient.Image);
+            .OverlayRegion(gradient);
 
         return factory.Image;
     }
