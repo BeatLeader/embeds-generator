@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using ImageProcessor;
@@ -203,6 +204,32 @@ internal static class DrawingUtils {
         }
 
         return destination;
+    }
+
+    #endregion
+
+    #region DrawGradient
+
+    public static void DrawGradient(Image destination, Color fromColor, Color toColor, Vector2 from, Vector2 to) {
+        var width = destination.Width;
+        var height = destination.Height;
+
+        var diff = to - from;
+        var direction = Vector2.Normalize(diff);
+        var magnitude = MathF.Sqrt(diff.X * diff.X + diff.Y * diff.Y);
+
+        var fromFloatColor = FloatColor.FromColor(fromColor);
+        var toFloatColor = FloatColor.FromColor(toColor);
+
+        using (var destinationBitmap = new FastBitmap(destination)) {
+            Parallel.For(0, height, (int y) => {
+                for (var x = 0; x < width; x += 1) {
+                    var t = Vector2.Dot(new Vector2(x - from.X, y - from.Y), direction) / magnitude;
+                    var col = FloatColor.LerpClamped(fromFloatColor, toFloatColor, t);
+                    destinationBitmap.SetPixel(x, y, col.ToColor());
+                }
+            });
+        }
     }
 
     #endregion

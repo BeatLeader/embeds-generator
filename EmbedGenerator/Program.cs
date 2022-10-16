@@ -71,8 +71,8 @@ internal static class Program {
                 // null,
                 80,
                 2.0f,
-                Color.Red,
-                Color.Blue,
+                Color.FromArgb(255, 255, 155, 20),
+                Color.FromArgb(255, 0, 145, 255),
                 Color.BlueViolet
             );
 

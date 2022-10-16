@@ -2,6 +2,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
+using System.Numerics;
 using ImageProcessor;
 using ImageProcessor.Imaging;
 using ImageProcessor.Imaging.Filters.Photo;
@@ -101,8 +102,7 @@ internal class EmbedGenerator {
             out var cornerAreaRectangle
         );
 
-        var gradientBrush = GetGradientBrush(leftColor, rightColor);
-        var factory = GenerateBackground(coverImage, gradientBrush, cornerAreaRectangle);
+        var factory = GenerateBackground(coverImage, cornerAreaRectangle, leftColor, rightColor);
 
         if (avatarOverlayImage == null) {
             factory.OverlayRegion(_avatarShadow, _layout.AvatarOverlayRectangle);
@@ -196,8 +196,9 @@ internal class EmbedGenerator {
 
     private ImageFactory GenerateBackground(
         Image coverImage,
-        Brush gradientBrush,
-        Rectangle cornerRectangle
+        Rectangle cornerRectangle,
+        Color leftColor, 
+        Color rightColor
     ) {
         var bufferA = new ImageFactory();
         var bufferB = new ImageFactory();
@@ -207,12 +208,12 @@ internal class EmbedGenerator {
         DrawCornerMask(bufferC); // C <- CornerMask
 
         bufferA.Load(_fullSizeEmptyBitmap); // A <- Transparent
-        DrawGradient(bufferA, _gradientMask, gradientBrush); // A <- NonBlurredGradient
+        DrawGradient(bufferA, _gradientMask, leftColor, rightColor); // A <- NonBlurredGradient
         bufferB.Load(_backgroundImage).OverlayRegion(bufferA.Image); // B <- BackgroundWithGradient
         bufferA.Load(_coverMask).OverlayRegion(bufferC.Image, cornerRectangle); // A <- BorderMask
         bufferB.MaskRegion(bufferA.Image); // B <- Border
 
-        DrawGradient(bufferA, _gradientMaskBlurred, gradientBrush); // A <- BlurredGradient
+        DrawGradient(bufferA, _gradientMaskBlurred, leftColor, rightColor); // A <- BlurredGradient
         
         bufferC.Load(coverImage)
             .GaussianBlur(CoverImageBlur)
@@ -228,17 +229,11 @@ internal class EmbedGenerator {
 
     #region DrawGradient
 
-    private Brush GetGradientBrush(Color leftColor, Color rightColor) {
-        return new LinearGradientBrush(
-            new Point(0, _layout.Height),
-            new Point(_layout.Width, 0),
-            leftColor, rightColor
+    private void DrawGradient(ImageFactory factory, Image mask, Color leftColor, Color rightColor) {
+        DrawingUtils.DrawGradient(factory.Image, leftColor, rightColor,
+            new Vector2(_layout.Width * 0.4f, _layout.Height * 0.6f),
+            new Vector2(_layout.Width * 0.6f, _layout.Height * 0.4f)
         );
-    }
-
-    private void DrawGradient(ImageFactory factory, Image mask, Brush gradientBrush) {
-        var graphics = Graphics.FromImage(factory.Image);
-        graphics.FillRectangle(gradientBrush, _layout.FullRectangle);
         factory.MaskRegion(mask);
     }
 
