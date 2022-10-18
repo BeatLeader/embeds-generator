@@ -107,12 +107,6 @@ internal class EmbedGenerator {
         );
 
         var hueShiftRadians = overlayHueShift * MathF.PI / 180;
-        
-        var textOverlayTexture = GenerateTextOverlayTexture(
-            playerName, songName, modifiers,
-            accuracyText, rankText, diffText,
-            textRectangle, diffColor
-        );
 
         var pixelShader = new EmbedPixelShader(
             BackgroundColor,
@@ -129,49 +123,31 @@ internal class EmbedGenerator {
             avatarImageTexture,
             avatarBorderTexture,
             starTexture,
-            textOverlayTexture,
             _finalMaskTexture,
             hueShiftRadians,
             overlaySaturation
         );
 
         var bitmap = new Bitmap(_layout.Width, _layout.Height);
-        using var destination = new FastBitmap(bitmap);
+        using (var destination = new FastBitmap(bitmap)) {
+            Parallel.For(0, _layout.Height, (int y) => {
+                for (var x = 0; x < _layout.Width; x++) {
+                    var pixel = pixelShader.GetPixel(x, y).ToColor();
+                    destination.SetPixel(x, y, pixel);
+                }
+            });
+        };
 
-        Parallel.For(0, _layout.Height, (int y) => {
-            for (var x = 0; x < _layout.Width; x++) {
-                var pixel = pixelShader.GetPixel(x, y).ToColor();
-                destination.SetPixel(x, y, pixel);
-            }
-        });
-
-        return bitmap;
-    }
-
-    #endregion
-
-    #region GenerateTextOverlayTexture
-
-    private ImageTexture GenerateTextOverlayTexture(
-        string playerName,
-        string songName,
-        string modifiers,
-        string accuracyText,
-        string rankText,
-        string diffText,
-        Rectangle diffTextRectangle,
-        Color diffColor
-    ) {
-        var textBitmap = new Bitmap(_layout.Width, _layout.Height);
-        var graphics = Graphics.FromImage(textBitmap);
+        var graphics = Graphics.FromImage(bitmap);
         graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
         graphics.FitText(playerName, Color.White, _fontFamily, _layout.PlayerNameRectangle, _layout.MinPlayerNameFontSize);
         graphics.FitText(songName, Color.White, _fontFamily, _layout.SongNameRectangle, _layout.MinSongNameFontSize);
         graphics.FitText(accuracyText, Color.White, _fontFamily, _layout.AccTextRectangle);
         graphics.FitText(rankText, Color.White, _fontFamily, _layout.RankTextRectangle);
         graphics.FitText(modifiers, Color.White, _fontFamily, _layout.ModifiersTextRectangle);
-        graphics.DrawTextCentered(diffText, _diffFont, diffColor, diffTextRectangle);
-        return new ImageTexture(textBitmap, _layout.FullRectangle);
+        graphics.DrawTextCentered(diffText, _diffFont, diffColor, textRectangle);
+
+        return bitmap;
     }
 
     #endregion

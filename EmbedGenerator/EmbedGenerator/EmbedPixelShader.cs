@@ -17,7 +17,6 @@ internal class EmbedPixelShader {
     private readonly ImageTexture _avatarImageTexture;
     private readonly ImageTexture? _avatarBorderTexture;
     private readonly ImageTexture? _starTexture;
-    private readonly ImageTexture _textOverlayTexture;
     private readonly ImageTexture _finalMaskTexture;
     private readonly float _hueShiftRadians;
     private readonly float _saturation;
@@ -40,7 +39,6 @@ internal class EmbedPixelShader {
         ImageTexture avatarImageTexture,
         ImageTexture? avatarBorderTexture,
         ImageTexture? starTexture,
-        ImageTexture textOverlayTexture,
         ImageTexture finalMaskTexture,
         float hueShiftRadians,
         float saturation
@@ -58,7 +56,6 @@ internal class EmbedPixelShader {
         _avatarShadowTexture = avatarShadowTexture;
         _avatarImageTexture = avatarImageTexture;
         _avatarBorderTexture = avatarBorderTexture;
-        _textOverlayTexture = textOverlayTexture;
         _finalMaskTexture = finalMaskTexture;
         _starTexture = starTexture;
         _hueShiftRadians = hueShiftRadians;
@@ -113,7 +110,6 @@ internal class EmbedPixelShader {
             result.AlphaBlend(star);
         }
         
-        result.AlphaBlend(_textOverlayTexture.GetPixel(x, y));
         result.AlphaMask(_finalMaskTexture.GetPixel(x, y));
         return result;
     }
