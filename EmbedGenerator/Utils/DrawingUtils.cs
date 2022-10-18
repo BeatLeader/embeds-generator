@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Text;
 using ImageProcessor;
 using ImageProcessor.Imaging;
@@ -7,65 +9,19 @@ using ImageProcessor.Imaging;
 namespace EmbedGenerator;
 
 internal static class DrawingUtils {
-    #region OverlayRegion
+    #region Resized
 
-    public static ImageFactory OverlayRegion(this ImageFactory imageFactory, Image source, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.OverlayRegion(source, Point.Empty, imageFactory.Image.Size, resizeMode);
-    }
+    public static Image Resized(this Image source, Size newSize) {
+        if (newSize == source.Size) return source;
 
-    public static ImageFactory OverlayRegion(this ImageFactory imageFactory, Image source, Size size, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.OverlayRegion(source, Point.Empty, size, resizeMode);
-    }
+        var destRect = new RectangleF(PointF.Empty, newSize);
+        var srcRect = new RectangleF(PointF.Empty, source.Size);
 
-    public static ImageFactory OverlayRegion(this ImageFactory imageFactory, Image source, Rectangle rect, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.OverlayRegion(source, rect.Location, rect.Size, resizeMode);
-    }
-
-    public static ImageFactory OverlayRegion(this ImageFactory imageFactory, Image source, Point position, Size size, ResizeMode resizeMode = ResizeMode.Stretch) {
-        var imageLayer = new ImageLayer() {
-            Image = source.ResizeIfNecessary(size, resizeMode),
-            Position = position
-        };
-
-        return imageFactory.Overlay(imageLayer);
-    }
-
-    #endregion
-
-    #region MaskRegion
-
-    public static ImageFactory MaskRegion(this ImageFactory imageFactory, Image mask, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.MaskRegion(mask, Point.Empty, imageFactory.Image.Size, resizeMode);
-    }
-
-    public static ImageFactory MaskRegion(this ImageFactory imageFactory, Image mask, Size size, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.MaskRegion(mask, Point.Empty, size, resizeMode);
-    }
-
-    public static ImageFactory MaskRegion(this ImageFactory imageFactory, Image mask, Rectangle rect, ResizeMode resizeMode = ResizeMode.Stretch) {
-        return imageFactory.MaskRegion(mask, rect.Location, rect.Size, resizeMode);
-    }
-
-    public static ImageFactory MaskRegion(this ImageFactory imageFactory, Image mask, Point position, Size size, ResizeMode resizeMode = ResizeMode.Stretch) {
-        var imageLayer = new ImageLayer() {
-            Image = mask.ResizeIfNecessary(size, resizeMode),
-            Position = position
-        };
-
-        return imageFactory.Mask(imageLayer);
-    }
-
-    #endregion
-
-    #region ResizeIfNecessary
-
-    public static Image ResizeIfNecessary(this Image source, Size targetSize, ResizeMode resizeMode = ResizeMode.Stretch) {
-        if (source.Size == targetSize) return source;
-
-        return new ImageFactory()
-            .Load(source)
-            .Resize(new ResizeLayer(targetSize, resizeMode))
-            .Image;
+        var bitmap = new Bitmap(newSize.Width, newSize.Height, PixelFormat.Format32bppPArgb);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+        graphics.DrawImage(source, destRect, srcRect, GraphicsUnit.Pixel);
+        return bitmap;
     }
 
     #endregion
@@ -174,27 +130,6 @@ internal static class DrawingUtils {
         font = null;
         measuredSize = SizeF.Empty;
         return false;
-    }
-
-    #endregion
-
-    #region ApplyHsbTransform
-
-    public static Image ApplyHsbTransform(this Image source, float hueShiftDegrees, float saturation, float brightness) {
-        var hueShiftRadians = hueShiftDegrees * MathF.PI / 180;
-        var buffer = new Bitmap(source.Width, source.Height);
-        var graphics = Graphics.FromImage(buffer);
-        graphics.DrawImage(source, Point.Empty);
-
-        for (var y = 0; y < source.Height; y += 1) {
-            for (var x = 0; x < source.Width; x += 1) {
-                var col = FloatColor.FromColor(buffer.GetPixel(x, y));
-                col.ApplyHsbTransform(hueShiftRadians, saturation, brightness);
-                buffer.SetPixel(x, y, col.ToColor());
-            }
-        }
-
-        return buffer;
     }
 
     #endregion

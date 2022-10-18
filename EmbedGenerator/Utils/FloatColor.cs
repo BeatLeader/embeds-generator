@@ -21,6 +21,29 @@ public struct FloatColor {
 
     #endregion
 
+    #region Static
+
+    public static FloatColor Transparent => new();
+    public static FloatColor White => new(1, 1, 1, 1);
+    public static FloatColor Black => new(0, 0, 0, 1);
+
+    public static FloatColor LerpClamped(FloatColor a, FloatColor b, float t) {
+        var invT = 1.0f - t;
+
+        return t switch {
+            < 0 => a,
+            > 1 => b,
+            _ => new FloatColor(
+                a.R * invT + b.R * t,
+                a.G * invT + b.G * t,
+                a.B * invT + b.B * t,
+                a.A * invT + b.A * t
+            )
+        };
+    }
+
+    #endregion
+
     #region Cast
 
     public static FloatColor FromColor(Color color) {
@@ -47,6 +70,36 @@ public struct FloatColor {
             < 0f => 0x00,
             _ => (byte)(value * 0xFF)
         };
+    }
+
+    #endregion
+
+    #region Math
+
+    public void Add(FloatColor color) {
+        R += color.R;
+        G += color.G;
+        B += color.B;
+        A += color.A;
+    }
+
+    public void Multiply(FloatColor color) {
+        R *= color.R;
+        G *= color.G;
+        B *= color.B;
+        A *= color.A;
+    }
+
+    public void AlphaBlend(FloatColor color) {
+        var invAlpha = 1 - color.A;
+        R = color.R * color.A + R * invAlpha;
+        G = color.G * color.A + G * invAlpha;
+        B = color.B * color.A + B * invAlpha;
+        A = color.A + A * invAlpha;
+    }
+
+    public void AlphaMask(FloatColor color) {
+        A *= color.A;
     }
 
     #endregion

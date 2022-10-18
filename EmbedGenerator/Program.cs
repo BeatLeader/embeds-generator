@@ -18,7 +18,6 @@ internal static class Program {
     private static readonly Image StarImage = LoadImage("Star.png");
     private static readonly Image AvatarMask = LoadImage("AvatarMask.png");
     private static readonly Image AvatarShadow = LoadImage("AvatarShadow.png");
-    private static readonly Image BackgroundImage = LoadImage("Background.png");
     private static readonly Image GradientMask = LoadImage("GradientMask.png");
     private static readonly Image GradientMaskBlurred = LoadImage("GradientMaskBlurred.png");
     private static readonly Image CoverMask = LoadImage("CoverMask.png");
@@ -43,7 +42,6 @@ internal static class Program {
             StarImage,
             AvatarMask,
             AvatarShadow,
-            BackgroundImage,
             GradientMask,
             GradientMaskBlurred,
             CoverMask,
@@ -53,7 +51,7 @@ internal static class Program {
 
         Image? image = default;
 
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < 6; i++) {
             var startTime = DateTime.Now;
 
             image = embedGenerator.Generate(
