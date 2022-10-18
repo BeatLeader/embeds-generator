@@ -13,7 +13,7 @@ internal class EmbedGenerator {
     #region Constants
 
     private static readonly FloatColor BackgroundColor = FloatColor.White;
-    private static readonly FloatColor CoverTintColor = new(1.0f, 0.6f, 0.6f, 0.6f);
+    private static readonly FloatColor CoverTintColor = new(0.6f, 0.6f, 0.6f, 1.0f);
     private const int CoverBlurRadius = 4;
 
     private readonly NumberFormatInfo _numberFormatInfo = new() {
