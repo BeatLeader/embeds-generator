@@ -43,6 +43,7 @@ internal class RoundedRectangleTexture {
 
         var ratio = _maximalRadius - MathF.Sqrt(relativePos.X * relativePos.X + relativePos.Y * relativePos.Y);
         if (ratio < 0) return NoColor;
+        if (ratio > 1) ratio = 1;
         var col = _color;
         col.A *= ratio;
         return col;
